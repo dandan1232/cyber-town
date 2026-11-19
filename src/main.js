@@ -18,7 +18,7 @@ document.querySelector("#app").innerHTML = `
 <aside class="side-panel"><section id="residents-panel"><div class="section-title"><h2>办公室的伙伴</h2><span class="counter">03</span></div><p class="muted">每个人，都有自己的故事。</p><div id="residents"></div><div class="note"><span>小镇贴士</span><p>告诉伙伴你的名字、兴趣或今天的心情。下一次见面，他们会记得。</p><small>演示模式使用规则回复；AI 模式需要配置模型。</small></div></section>
 <section id="conversation" hidden><div class="section-title"><div><span class="eyebrow">正在交谈</span><h2 id="chat-name"></h2></div><button id="close-chat" class="quiet" aria-label="结束对话">结束 ×</button></div><p id="chat-role" class="muted"></p><div class="relationship"><span id="relation-text"></span><progress id="affinity" max="100" value="0"></progress></div><div class="tabs" role="tablist" aria-label="角色信息"><button id="tab-chat" role="tab" aria-selected="true">对话</button><button id="tab-memory" role="tab" aria-selected="false">记忆</button></div><div id="messages" role="log" aria-live="polite"></div><div id="memories" hidden></div><form id="chat-form"><label for="message">说点什么吧</label><textarea id="message" placeholder="你好，很高兴认识你！" maxlength="1000" rows="3" required></textarea><div class="form-footer"><span id="send-status">Enter 发送 · Shift + Enter 换行</span><button id="send" type="submit">发送</button></div></form></section>
 </aside></main><footer><span>CYBER TOWN <span class="muted">/</span> 每一次交谈，都留下点什么。</span><span>慢一点，认识一个新朋友。</span></footer><div id="toast" role="status" hidden></div>
-<dialog id="settings-dialog"><div class="section-title"><h2>设置与存档</h2><button id="close-settings" class="quiet" aria-label="关闭设置">关闭 ×</button></div><p>对话、好感度与记忆保存在当前浏览器。清除浏览器数据会丢失进度，建议先导出存档。</p><div class="setting-row"><label for="access-key">访问口令（站点启用保护时填写）</label><input id="access-key" type="password" autocomplete="off" placeholder="由站点管理员提供"><button id="save-key">保存口令并连接</button><small>口令仅保留在当前标签页会话中，不会写入存档。</small></div><div class="setting-row"><h3>我的小镇存档</h3><button id="export-save">导出存档</button><label class="file-label" for="import-save">导入存档</label><input id="import-save" type="file" accept="application/json,.json"><p id="import-status" aria-live="polite"></p></div><details><summary>管理员配置说明</summary><p>在 Vercel 项目的环境变量中设置 LLM_API_KEY、LLM_BASE_URL、LLM_MODEL，然后重新部署即可开启 AI 对话。可设置 APP_ACCESS_KEY 限制接口访问。模型密钥请勿填入本页面。</p></details><button id="reset" class="danger">重置此浏览器的小镇</button></dialog>`;
+<dialog id="settings-dialog"><div class="section-title"><h2>设置与存档</h2><button id="close-settings" class="quiet" aria-label="关闭设置">关闭 ×</button></div><p>对话、好感度与记忆保存在当前浏览器。清除浏览器数据会丢失进度，建议先导出存档。</p><div class="setting-row"><h3>我的小镇存档</h3><button id="export-save">导出存档</button><label class="file-label" for="import-save">导入存档</label><input id="import-save" type="file" accept="application/json,.json"><p id="import-status" aria-live="polite"></p></div><button id="reset" class="danger">重置此浏览器的小镇</button></dialog>`;
 
 const $ = (s) => document.querySelector(s);
 let state;
@@ -33,12 +33,7 @@ if (!canMove(state.player.x, state.player.y)) state.player = { x: 420, y: 310 };
 let selected = null,
   busy = false,
   paused = false,
-  mode = "connecting",
-  accessRequired = false;
-let accessKey = "";
-try {
-  accessKey = sessionStorage.getItem("cyber-town:access") || "";
-} catch {}
+  mode = "connecting";
 let toastTimer;
 function toast(message) {
   $("#toast").textContent = message;
@@ -203,7 +198,6 @@ async function api(path, body) {
     method: body ? "POST" : "GET",
     headers: {
       "Content-Type": "application/json",
-      ...(accessKey ? { "x-access-key": accessKey } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
     signal: AbortSignal.timeout(29000),
@@ -221,7 +215,6 @@ async function connect() {
   try {
     const status = await api("status");
     mode = status.mode;
-    accessRequired = status.accessRequired;
     $("#mode").textContent =
       mode === "ai" ? "AI 对话模式" : "演示模式 · 无需配置";
     $("#mode").title =
@@ -238,9 +231,7 @@ async function refreshAmbient() {
     const data = await api("ambient", {});
     world.setAmbient(data.dialogues);
   } catch (error) {
-    if (accessRequired && !accessKey)
-      toast("站点启用了访问保护，请在设置中填写口令。");
-    else toast(error.message);
+    toast(error.message);
   }
 }
 $("#chat-form").onsubmit = async (e) => {
@@ -312,20 +303,11 @@ $("#settings").onclick = () => {
     toast("请等待当前对话完成后打开设置。");
     return;
   }
-  $("#access-key").value = accessKey;
   $("#settings-dialog").showModal();
   updateMovement();
 };
 $("#close-settings").onclick = () => $("#settings-dialog").close();
 $("#settings-dialog").addEventListener("close", updateMovement);
-$("#save-key").onclick = () => {
-  accessKey = $("#access-key").value.trim();
-  try {
-    sessionStorage.setItem("cyber-town:access", accessKey);
-  } catch {}
-  connect();
-  toast("口令已保存在当前标签页。");
-};
 function download(name, value) {
   const url = URL.createObjectURL(
     new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
