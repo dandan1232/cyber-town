@@ -1,0 +1,19 @@
+{
+  "name": "cyber-town",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "dev:full": "node scripts/dev.mjs",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test tests/*.test.js"
+  },
+  "devDependencies": {
+    "vite": "^6.4.1"
+  }
+}
