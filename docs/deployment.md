@@ -76,4 +76,9 @@ npx vercel --prod
 
 ## 7. 发布记录
 
-实际部署地址、提交版本及验证结果应在部署后补充。若缺少平台授权，明确记录阻碍，不把本地预览地址称作上线地址。
+- 发布日期：2026-11-19。
+- 生产地址：https://cyber-town.vercel.app/。
+- Vercel 项目：`dandan1232s-projects/cyber-town`，关联 GitHub `dandan1232/cyber-town` 的 `main` 分支。
+- 首次上线版本：`2371836`；Vercel 状态为 `Deployment has completed`。
+- 公网实测：首页 HTTP 200，状态接口返回 `demo`，角色对话成功并能回忆测试姓名和喜好；无需 Vercel 登录即可访问。
+- 当前未配置真实模型，模型调用仍需按第 4 节配置并重新部署后验收。
